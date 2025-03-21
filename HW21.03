@@ -1,0 +1,136 @@
+A
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Linq;
+
+class Program
+{
+    public static async Task<string> FetchDataAsync(string url)
+    {
+        using var client = new HttpClient();
+        return await client.GetStringAsync(url);
+    }
+
+    public static async Task Main(string[] args)
+    {
+        var urls = new[]
+        {
+            "https://jsonplaceholder.typicode.com/posts/1",
+            "https://dog.ceo/api/breeds/image/random",
+            "https://randomuser.me/api/"
+        };
+
+        var tasks = urls.Select(url => FetchDataAsync(url)).ToList();
+        var results = await Task.WhenAll(tasks);
+
+        foreach (var result in results)
+        {
+            Console.WriteLine(result);
+            Console.WriteLine("--------------------");
+        }
+    }
+}
+B
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Linq;
+
+class Program
+{
+    public static async Task<string> FetchDataAsync(string url)
+    {
+        using var client = new HttpClient();
+        try
+        {
+            return await client.GetStringAsync(url);
+        }
+        catch (HttpRequestException)
+        {
+            return $"Ошибка при загрузке данных: {url}";
+        }
+    }
+
+    public static async Task Main(string[] args)
+    {
+        var urls = new[]
+        {
+            "https://jsonplaceholder.typicode.com/posts/1",
+            "https://dog.ceo/api/breeds/image/random",
+            "https://randomuser.me/api/",
+            "https://invalid-api.example" // Неверный URL для демонстрации ошибки
+        };
+
+        var tasks = urls.Select(url => FetchDataAsync(url)).ToList();
+        var results = await Task.WhenAll(tasks);
+
+        foreach (var result in results)
+        {
+            Console.WriteLine(result);
+            Console.WriteLine("--------------------");
+        }
+    }
+}
+C
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Linq;
+using System.Text.Json;
+
+class Program
+{
+    public static async Task<string> FetchDataAsync(string url)
+    {
+        using var client = new HttpClient();
+        try
+        {
+            return await client.GetStringAsync(url);
+        }
+        catch (HttpRequestException)
+        {
+            return $"Ошибка при загрузке данных: {url}";
+        }
+    }
+
+    public static async Task Main(string[] args)
+    {
+        
+        var userUrl = "https://randomuser.me/api/";
+        var userData = await FetchDataAsync(userUrl);
+        var userJson = JsonDocument.Parse(userData);
+        var firstName = userJson.RootElement.GetProperty("results")[0].GetProperty("name").GetProperty("first").GetString();
+
+        Console.WriteLine($"Имя пользователя: {firstName}");
+
+        
+        var postsUrl = $"https://jsonplaceholder.typicode.com/posts?userId=1";
+        var postsData = await FetchDataAsync(postsUrl);
+        var postsJson = JsonDocument.Parse(postsData);
+
+        Console.WriteLine("Посты:");
+        foreach (var post in postsJson.RootElement.EnumerateArray())
+        {
+            Console.WriteLine($"- {post.GetProperty("title").GetString()}");
+        }
+
+        
+        var dogUrls = new[]
+        {
+            "https://dog.ceo/api/breeds/image/random",
+            "https://dog.ceo/api/breeds/image/random",
+            "https://dog.ceo/api/breeds/image/random"
+        };
+
+        var dogTasks = dogUrls.Select(url => FetchDataAsync(url)).ToList();
+        var dogResults = await Task.WhenAll(dogTasks);
+
+        Console.WriteLine("\nСлучайные изображения собак:");
+        foreach (var dogResult in dogResults)
+        {
+            var dogJson = JsonDocument.Parse(dogResult);
+            Console.WriteLine($"- {dogJson.RootElement.GetProperty("message").GetString()}");
+        }
+    }
+}
